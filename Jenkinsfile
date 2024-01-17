@@ -17,7 +17,7 @@ pipeline{
         stage ('deploy'){
             steps {
                 sh 'ssh root@172.31.21.117'
-                sh 'scp /home/slave1/workspace/HelloWorldWar/target/hello-world-war-1.0.0.war root@172.31.21.117:/apache-tomcat-8.5.97/webapps'
+                sh 'scp /home/slave1/workspace/HelloWorldWar/target/hello-world-war-1.0.0.war root@172.31.21.117:/opt/apache-tomcat-8.5.97/webapps'
                 
             }
         }
