@@ -3,8 +3,8 @@ pipeline{
     stages {
       stage ('checkout') {
         steps {
-            sh 'rm -rf hello-world-war-Tomcat2'            
-            sh 'git clone https://github.com/Nethravathi-R/Hello-world-war-Tomcat2.git'      
+            sh 'rm -rf hello-world-war'            
+            sh 'git clone https://github.com/Nethravathi-R/hello-world-war.git'      
           
               }
       }
