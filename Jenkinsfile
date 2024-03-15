@@ -10,15 +10,17 @@ pipeline{
       }
         stage ('build') {
         steps {
-            sh 'mvn --version'
-            sh 'mvn clean install'
-              }
+            sh 'echo inside build'
+            dir("hello-world-war"){
+                sh 'inside dir'
+                sh 'docker build -t tomcat-war:1.0 .'
+            }            
+          }
          }       
         stage ('deploy'){
             steps {
-                sh 'ssh root@172.31.41.184'
-                sh 'scp /home/slave1/workspace/HelloWorldWar/target/hello-world-war-1.0.0.war root@172.31.41.184:/opt/apache-tomcat-8.5.98/webapps'
-                
+               sh 'docker rm -f tomcat-war'
+               sh 'docker run -d -p 8082:8080 --name tomcat-war tomcat-war:1.0'                
             }
         }
     }
