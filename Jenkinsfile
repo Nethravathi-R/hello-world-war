@@ -38,7 +38,7 @@ pipeline{
         }
         stage('Push  Image to Docker Hub'){
               steps{
-                  sh "docker tag tomcat-file:${BUILD_NUMBER} Nethravathi/master-slave1:${BUILD_NUMBER}"
+                  sh "docker tag tomcat-file:${BUILD_NUMBER} Nethravathi/master-slave:${BUILD_NUMBER}"
                   sh "docker push Nethravathi/master-slave:${BUILD_NUMBER}"
                   echo "Image pushing completed.."
               }
@@ -57,7 +57,7 @@ pipeline{
                     agent {label 'slave'}
                 steps {
                         sh "docker pull Nethravathi/master-slave1:${BUILD_NUMBER}"
-                        sh "docker run -d --name my_container_2 -p 8086:8080 Nethravathi/master-slave2:${BUILD_NUMBER}"
+                        sh "docker run -d --name my_container_2 -p 8086:8080 Nethravathi/master-slave:${BUILD_NUMBER}"
                       }
                  }
              }
