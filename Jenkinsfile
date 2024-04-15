@@ -53,8 +53,8 @@ pipeline{
                         sh "docker run -d --name my_container_1 -p 8085:8080 Nethravathi/master-slave:${BUILD_NUMBER}"
                        }
                   }            
-                stage ('Deploy to slave2'){
-                    agent {label 'slave'}
+                stage ('Deploy to slave1'){
+                    agent {label 'slave1'}
                 steps {
                         sh "docker pull Nethravathi/master-slave1:${BUILD_NUMBER}"
                         sh "docker run -d --name my_container_2 -p 8086:8080 Nethravathi/master-slave:${BUILD_NUMBER}"
