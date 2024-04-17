@@ -1,66 +1,49 @@
-pipeline{
-    agent { label 'slave1' }
-   environment {     
-        DOCKERHUB_CREDENTIALS= credentials('docker-hub')     
-    }
+pipeline {
+    agent any
+
     stages {
-      stage ('Checkout') {
-        steps {
-            sh 'rm -rf hello-world-war'            
-            sh 'git clone https://github.com/Nethravathi-R/hello-world-war.git'      
-          
-              }
-      }
-        stage ('Build') {
-        steps {
-            sh 'echo "inside build"'
-            dir("hello-world-war") {
-                sh 'echo "inside dir"'
-                sh 'docker build -t tomcat-fiel:${BUILD_NUMBER} .'
-            }            
-          }
-        }
-             
-        // stage ('Deploy'){
-        //     steps {
-        //        sh 'docker rm -f tomcat-war'
-        //        sh 'docker run -d -p 8082:8080 --name tomcat-war tomcat-war:1.0'                
-        //     }
-        // }
-
-
-        
-        stage('Login to Docker Hub'){
-            steps{
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR  --password-stdin'
-                echo 'Login Completed'
+        stage('checkout') {
+            steps {
+                sh 'rm -rf hello-world-war'
+                sh 'git clone -b k8s https://github.com/tarundanda147/hello-world-war.git'
             }
         }
-        stage('Push  Image to Docker Hub'){
-              steps{
-                  sh "docker tag tomcat-file:${BUILD_NUMBER} Nethravathi/master-slave:${BUILD_NUMBER}"
-                  sh "docker push Nethravathi/master-slave:${BUILD_NUMBER}"
-                  echo "Image pushing completed.."
-              }
+        
+        stage('build') {
+            steps {
+                dir("hello-world-war") {
+                    sh 'echo "inside build"'
+                    sh "docker build -t tomcat-war:${BUILD_NUMBER} ."
+                }
+            }
         }
-        stage('Pull and Deploy'){
-            parallel{
-                stage('Deploy t node1') {
-                    agent any
-                    steps {
-                        
-                        sh "docker pull Nethravathi/master-slave1:${BUILD_NUMMBER}"
-                        sh "docker run -d --name my_container_1 -p 8085:8080 Nethravathi/master-slave:${BUILD_NUMBER}"
-                       }
-                  }            
-                stage ('Deploy to slave1'){
-                    agent {label 'slave1'}
-                steps {
-                        sh "docker pull Nethravathi/master-slave1:${BUILD_NUMBER}"
-                        sh "docker run -d --name my_container_2 -p 8086:8080 Nethravathi/master-slave:${BUILD_NUMBER}"
-                      }
-                 }
-             }
+        
+        stage('push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: '773e6289-72b6-476b-9e54-19702f9fb5d3', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                    sh "docker tag tomcat-war:${BUILD_NUMBER} tarundanda147/tomcat:${BUILD_NUMBER}"
+                    sh "docker push tarundanda147/tomcat:${BUILD_NUMBER}"
+                }
+            }
+        }
+
+        stage('Helm Deploy') {
+            steps {
+                // Authenticate with AWS using IAM credentials stored in Jenkins
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: '03bb86f5-d824-42dd-b9c7-da3dc566f56c',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh "aws eks --region us-east-1 update-kubeconfig --name eks-cluster"
+                    echo 'Deploying to Kubernetes using Helm'
+                    // Deploy Helm chart to Kubernetes cluster
+                    sh "helm install first  /var/lib/jenkins/workspace/eks-docker/hello-world-war --namespace hello-world-war --set image.tag=$BUILD_NUMBER --dry-run"
+                    sh "helm upgrade first  /var/lib/jenkins/workspace/eks-docker/hello-world-war --namespace hello-world-war --set image.tag=$BUILD_NUMBER"
+                }
+            }
         }
     }
-}         
+}
